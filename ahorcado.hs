@@ -1,13 +1,20 @@
 import Data.Char (isAlpha, toLower)
 import Data.Time.Clock (getCurrentTime, UTCTime)
 import Data.Time (diffUTCTime)
-import System.IO (hFlush, stdout)
 import Data.List (nub)
 import System.FilePath
+import System.IO (hFlush, stdout, openFile, hClose, hGetContents, hPutStr, IOMode(ReadMode, WriteMode))
 import System.Directory (doesFileExist)
 import Control.Monad (unless)
 import Distribution.SPDX (LicenseId(DOC))
 
+archivoEstadisticas :: FilePath
+archivoEstadisticas = "estadisticas.txt"
+archivoPalabras :: FilePath
+archivoPalabras = "palabras.txt"
+
+numIntentos :: Int
+numIntentos = 6
 
 limpiarYLlevarAMinusculas :: String -> String
 limpiarYLlevarAMinusculas = map toLower
@@ -60,7 +67,7 @@ estadoInicialJuego palabra = GameState
     { palabraSecreta     = palabra
     , palabraAdivinada   = representarPalabraOculta palabra
     , letrasIncorrectas  = []
-    , intentosRestantes  = 6
+    , intentosRestantes  = numIntentos
     , letrasYaIntentadas = []
     }
 
@@ -136,18 +143,23 @@ cargarEstadisticas :: FilePath -> IO Estadisticas
 cargarEstadisticas nombreArchivo = do
     existe <- doesFileExist nombreArchivo
     unless existe $ writeFile nombreArchivo "0\n0\n0"
-    cs <- readFile nombreArchivo
+    h <- openFile nombreArchivo ReadMode
+    cs <- hGetContents h
     let lineas = lines cs
-        [g, p, a] = take 3 lineas
+        [g, p, a] = take 3 (lineas ++ repeat "0")
         estadisticas = Estadisticas (read g) (read p) (read a)
+    length cs `seq` hClose h
     return estadisticas
 
 guardarEstadisticas :: FilePath -> Estadisticas -> IO ()
 guardarEstadisticas nombreArchivo estadisticas = do
-    writeFile nombreArchivo $
+    h <- openFile nombreArchivo WriteMode
+    hPutStr h $
         show (partidasGanadas estadisticas) ++ "\n" ++
         show (partidasPerdidas estadisticas) ++ "\n" ++
         show (partidasAbandonadas estadisticas) ++ "\n"
+    hClose h
+    
 
 mostrarMenu :: IO ()
 mostrarMenu = do
@@ -193,7 +205,7 @@ manejarOpcion 2 palabras estadisticas = do
 
 manejarOpcion 3 _ estadisticas = do
     putStrLn "¡Gracias por jugar! Saliendo del programa."
-    guardarEstadisticas "estadisticas.txt" estadisticas
+    guardarEstadisticas archivoEstadisticas estadisticas
 
 
 manejarOpcion _ palabras estadisticas = do
@@ -208,8 +220,8 @@ menuPrincipal palabrasFiltradas estadisticas = do
 
 main :: IO ()
 main = do
-    palabras <- cargarPalabrasFichero "palabras.txt"
-    estadisticas <- cargarEstadisticas "estadisticas.txt"
+    palabras <- cargarPalabrasFichero archivoPalabras
+    estadisticas <- cargarEstadisticas archivoEstadisticas
 
     if null palabras
         then putStrLn "No hay palabras válidas disponibles. El juego no puede iniciar."

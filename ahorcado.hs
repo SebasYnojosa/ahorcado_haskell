@@ -7,6 +7,7 @@ import System.IO (hFlush, stdout, openFile, hClose, hGetContents, hPutStr, IOMod
 import System.Directory (doesFileExist)
 import Control.Monad (unless)
 import Distribution.SPDX (LicenseId(DOC))
+import GHC.Base (neChar)
 
 archivoEstadisticas :: FilePath
 archivoEstadisticas = "estadisticas.txt"
@@ -182,17 +183,22 @@ obtenerOpcionMenu = do
 manejarOpcion :: Int -> [String] -> Estadisticas -> IO ()
 manejarOpcion 1 palabrasDisponibles estadisticas = do
     putStrLn "\n--- Nueva Partida ---"
-    print palabrasDisponibles
     if null palabrasDisponibles
         then do 
             putStrLn "No hay palabras válidas para jugar. Revisa tu lista."
             menuPrincipal palabrasDisponibles estadisticas
         else do
             palabraInicial <- escogerPalabraPseudoAleatoria palabrasDisponibles
-            putStrLn $ "DEBUG: Palabra secreta para esta partida: " ++ palabraInicial
+            -- putStrLn $ "DEBUG: Palabra secreta para esta partida: " ++ palabraInicial
+            putStrLn "Si aprietas Ctrl+C, abandonarás la partida"
+            let abandonoEstadisticas = estadisticas {partidasAbandonadas = partidasAbandonadas estadisticas + 1}
+
+            guardarEstadisticas archivoEstadisticas abandonoEstadisticas
 
             let estadoInicial = estadoInicialJuego palabraInicial
-            nEstadisticas <- bucleJuegoPrincipal estadoInicial estadisticas
+            abandonoEstadisticas <- bucleJuegoPrincipal estadoInicial abandonoEstadisticas
+            let nEstadisticas = abandonoEstadisticas {partidasAbandonadas = partidasAbandonadas abandonoEstadisticas - 1}
+            guardarEstadisticas archivoEstadisticas nEstadisticas
             putStrLn "La partida ha terminado."
             menuPrincipal palabrasDisponibles nEstadisticas
 

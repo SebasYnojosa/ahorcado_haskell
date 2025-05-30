@@ -29,10 +29,10 @@ archivoPalabras :: FilePath
 archivoPalabras = "palabras.txt"
 
 -- Rutas de los sonidos para acierto y error
-sonidoError :: FilePath 
+sonidoError :: FilePath
 sonidoError = "./sonido/error.wav"
 
-sonidoExito :: FilePath 
+sonidoExito :: FilePath
 sonidoExito = "./sonido/exito.wav"
 
 -- Número máximo de intentos permitidos por partida
@@ -72,7 +72,7 @@ escogerPalabraPseudoAleatoria palabrasPosibles = do
 
 -- Representa la palabra oculta con guiones bajos
 representarPalabraOculta :: String -> String
-representarPalabraOculta palabra = map (const '_') palabra
+representarPalabraOculta = map (const '_')
 
 -- ============================================================================
 -- Sonido (solo Windows, usando PowerShell)
@@ -80,7 +80,7 @@ representarPalabraOculta palabra = map (const '_') palabra
 
 -- Reproduce un sonido .wav usando PowerShell (Windows)
 reproducirSonido :: FilePath -> IO ()
-reproducirSonido archivoSonido = 
+reproducirSonido archivoSonido =
     callCommand $ "powershell -c (New-Object Media.SoundPlayer \"" ++ archivoSonido ++ "\").PlaySync();"
 
 -- ============================================================================
@@ -156,10 +156,72 @@ jugarTurnoCompleto estado letra
                 }
         in ("Lo siento, la letra '" ++ [letra] ++ "' NO está en la palabra.", nuevoEstado)
 
+-- Dibuja el estado del ahorcado según los intentos restantes
+dibujaAhorcado :: Int -> IO ()
+dibujaAhorcado n = putStrLn $ case n of
+    6 ->  "  +---+\n"
+       ++ "  |   |\n"
+       ++ "      |\n"
+       ++ "      |\n"
+       ++ "      |\n"
+       ++ "      |\n"
+       ++ "========="
+    5 ->  "  +---+\n"
+       ++ "  |   |\n"
+       ++ "  O   |\n"
+       ++ "      |\n"
+       ++ "      |\n"
+       ++ "      |\n"
+       ++ "========="
+    4 ->  "  +---+\n"
+       ++ "  |   |\n"
+       ++ "  O   |\n"
+       ++ "  |   |\n"
+       ++ "      |\n"
+       ++ "      |\n"
+       ++ "========="
+    3 ->  "  +---+\n"
+       ++ "  |   |\n"
+       ++ "  O   |\n"
+       ++ " /|   |\n"
+       ++ "      |\n"
+       ++ "      |\n"
+       ++ "========="
+    2 ->  "  +---+\n"
+       ++ "  |   |\n"
+       ++ "  O   |\n"
+       ++ " /|\\  |\n"
+       ++ "      |\n"
+       ++ "      |\n"
+       ++ "========="
+    1 ->  "  +---+\n"
+       ++ "  |   |\n"
+       ++ "  O   |\n"
+       ++ " /|\\  |\n"
+       ++ " /    |\n"
+       ++ "      |\n"
+       ++ "========="
+    0 ->  "  +---+\n"
+       ++ "  |   |\n"
+       ++ "  O   |\n"
+       ++ " /|\\  |\n"
+       ++ " / \\  |\n"
+       ++ "      |\n"
+       ++ "========="
+    _ ->  "  +---+\n"
+       ++ "  |   |\n"
+       ++ "      |\n"
+       ++ "      |\n"
+       ++ "      |\n"
+       ++ "      |\n"
+       ++ "========="
+
+
 -- Muestra el estado actual del juego al usuario
 mostrarEstadoJuego :: GameState -> IO ()
 mostrarEstadoJuego estado = do
     putStrLn "\n------------------------------------"
+    dibujaAhorcado (intentosRestantes estado)
     putStrLn $ "Palabra: " ++ palabraAdivinada estado
     putStrLn $ "Letras incorrectas: " ++ show (letrasIncorrectas estado)
     putStrLn $ "Intentos restantes: " ++ show (intentosRestantes estado) ++ "/6"
@@ -269,7 +331,7 @@ manejarOpcion :: Int -> [String] -> Estadisticas -> IO ()
 manejarOpcion 1 palabrasDisponibles estadisticas = do
     putStrLn "\n--- Nueva Partida ---"
     if null palabrasDisponibles
-        then do 
+        then do
             putStrLn "No hay palabras válidas para jugar. Revisa tu lista."
             menuPrincipal palabrasDisponibles estadisticas
         else do
